@@ -3,7 +3,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
 import { Repository } from 'typeorm';
-import { Category } from 'src/categories/entities/category.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
@@ -11,8 +10,6 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-    @InjectRepository(Category)
-    private readonly categoryRepository: Repository<Category>,
   ) {}
   async create(createProductDto: CreateProductDto) {
     const product = new Product();
