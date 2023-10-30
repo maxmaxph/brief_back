@@ -1,26 +1,50 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { Product } from './entities/product.entity';
+import { Repository } from 'typeorm';
+import { Category } from 'src/categories/entities/category.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class ProductsService {
-  create(createProductDto: CreateProductDto) {
-    return 'This action adds a new product';
+  constructor(
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
+  ) {}
+  async create(createProductDto: CreateProductDto) {
+    const product = new Product();
+    Object.assign(createProductDto, product);
+    return this.productRepository.save(product);
   }
 
   findAll() {
-    return `This action returns all products`;
+    return this.productRepository.find;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  async findOne(id: number) {
+    const found = await this.productRepository.findOneBy({ id: id });
+    if (!found) {
+      throw new NotFoundException(`product #${id} not found`);
+    }
+
+    return found;
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  async update(id: number, updateProductDto: UpdateProductDto) {
+    console.log('Je suis dans le productService et je Logg', UpdateProductDto);
+    const productToUpdate = await this.findOne(id);
+    Object.assign(productToUpdate, updateProductDto);
+    return this.productRepository.save(productToUpdate);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async remove(id: number) {
+    const productToRemove = await this.findOne(id);
+    if (!productToRemove) {
+      throw new NotFoundException(`product #${id} not found`);
+    }
+    return this.productRepository.remove(productToRemove);
   }
 }
