@@ -13,12 +13,13 @@ export class ProductsService {
   ) {}
   async create(createProductDto: CreateProductDto) {
     const product = new Product();
-    Object.assign(createProductDto, product);
+    Object.assign(product, createProductDto);
+
     return this.productRepository.save(product);
   }
 
   findAll() {
-    return this.productRepository.find;
+    return this.productRepository.find();
   }
 
   async findOne(id: number) {
@@ -31,10 +32,12 @@ export class ProductsService {
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {
-    console.log('Je suis dans le productService et je Logg', UpdateProductDto);
-    const productToUpdate = await this.findOne(id);
-    Object.assign(productToUpdate, updateProductDto);
-    return this.productRepository.save(productToUpdate);
+    const productToUpdate = await this.findOne(id); // Récupération d'un produit par son id
+    const updatedProduct = this.productRepository.merge(
+      productToUpdate,
+      updateProductDto,
+    ); // Fusion des données du produit à mettre à jour avec les nouvelles données
+    await this.productRepository.save(updatedProduct); // Sauvegarde du produit mis à jour
   }
 
   async remove(id: number) {
