@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
@@ -11,40 +15,65 @@ export class ProductsService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
   ) {}
-  async create(createProductDto: CreateProductDto) {
-    const product = new Product();
-    Object.assign(product, createProductDto);
 
-    return this.productRepository.save(product);
+  async create(createProductDto: CreateProductDto) {
+    try {
+      const product = new Product();
+      Object.assign(product, createProductDto);
+      return await this.productRepository.save(product);
+    } catch (error) {
+      throw new InternalServerErrorException('Error creating the product');
+    }
   }
 
-  findAll() {
-    return this.productRepository.find();
+  async findAll() {
+    try {
+      return await this.productRepository.find();
+    } catch (error) {
+      throw new InternalServerErrorException('Error fetching products');
+    }
   }
 
   async findOne(id: number) {
-    const found = await this.productRepository.findOneBy({ id: id });
-    if (!found) {
-      throw new NotFoundException(`product #${id} not found`);
+    try {
+      const found = await this.productRepository.findOneBy({ id: id });
+      if (!found) {
+        throw new NotFoundException(`product #${id} not found`);
+      }
+      return found;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error fetching the product');
     }
-
-    return found;
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {
-    const productToUpdate = await this.findOne(id); // Récupération d'un produit par son id
-    const updatedProduct = this.productRepository.merge(
-      productToUpdate,
-      updateProductDto,
-    ); // Fusion des données du produit à mettre à jour avec les nouvelles données
-    await this.productRepository.save(updatedProduct); // Sauvegarde du produit mis à jour
+    try {
+      const productToUpdate = await this.findOne(id);
+      const updatedProduct = this.productRepository.merge(
+        productToUpdate,
+        updateProductDto,
+      );
+      await this.productRepository.save(updatedProduct);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error updating the product');
+    }
   }
 
   async remove(id: number) {
-    const productToRemove = await this.findOne(id);
-    if (!productToRemove) {
-      throw new NotFoundException(`product #${id} not found`);
+    try {
+      const productToRemove = await this.findOne(id);
+      return await this.productRepository.remove(productToRemove);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error removing the product');
     }
-    return this.productRepository.remove(productToRemove);
   }
 }
